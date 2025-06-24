@@ -24,20 +24,30 @@ public class SpaceGame extends JFrame implements KeyListener {
     private static final int HEIGHT = 500;
     private static final int PLAYER_WIDTH = 50;
     private static final int PLAYER_HEIGHT = 50;
-    private static final int OBSTACLE_WIDTH = 20;
-    private static final int OBSTACLE_HEIGHT = 20;
+    private static final int OBSTACLE_WIDTH = 40;
+    private static final int OBSTACLE_HEIGHT = 40;
     private static final int PROJECTILE_WIDTH = 5;
     private static final int PROJECTILE_HEIGHT = 10;
     private static final int PLAYER_SPEED = 12;
     private static final int OBSTACLE_SPEED = 3;
     private static final int PROJECTILE_SPEED = 20;
     private int score = 0;
-
+    private BufferedImage backgroundImage;
     private int playerHealth = 2;
     private int timeLeft = 60;
 
     private int level = 1;
     private int levelNum = 20;
+
+    private boolean movingUp = false;
+    private boolean movingDown = false;
+    private boolean movingLeft = false;
+    private boolean movingRight = false;
+
+    private final int DUCK_FRAME_COUNT =5;
+    private int currentDuckFrame = 0;
+    private long finalDuckFrame = 0;
+    private final int DUCK_ANIMATION_DELAY = 50;
 
     private boolean isShieldActive = false;
     private long shieldEndTime = 0;
@@ -80,18 +90,18 @@ public class SpaceGame extends JFrame implements KeyListener {
     }
 
 
-    private java.util.List<Star> stars;
-    private class Star {
-        int x, y;
-        Color color;
-
-        Star(int x, int y, Color color) {
-            this.x = x;
-            this.y = y;
-            this.color = color;
-        }
-    }
-
+//    //*private java.util.List<Star> stars;
+//    private class Star {
+//        int x, y;
+//        Color color;
+//
+//        Star(int x, int y, Color color) {
+//            this.x = x;
+//            this.y = y;
+//            this.color = color;
+//        }
+//    }*/
+    private BufferedImage healthboostImage;
     private BufferedImage playerfish;
     private BufferedImage squidSpriteSheet;
     private final int SPRITE_WIDTH = 32;
@@ -102,24 +112,24 @@ public class SpaceGame extends JFrame implements KeyListener {
 
 
 
-    private java.util.List<Star> generateStars(int count) {
-        java.util.List<Star> starList = new ArrayList<>();
-        java.util.Random rand = new java.util.Random();
-        for (int i = 0; i < count; i++) {
-            int x = rand.nextInt(WIDTH);
-            int y = rand.nextInt(HEIGHT);
-            Color color = new Color(rand.nextInt(256), rand.nextInt(256), rand.nextInt(256));
-            starList.add(new Star(x, y, color));
-        }
-        return starList;
-    }
+//    private java.util.List<Star> generateStars(int count) {
+//        java.util.List<Star> starList = new ArrayList<>();
+//        java.util.Random rand = new java.util.Random();
+//        for (int i = 0; i < count; i++) {
+//            int x = rand.nextInt(WIDTH);
+//            int y = rand.nextInt(HEIGHT);
+//            Color color = new Color(rand.nextInt(256), rand.nextInt(256), rand.nextInt(256));
+//            starList.add(new Star(x, y, color));
+//        }
+//        return starList;
+//    }
 
     public SpaceGame() {
         setTitle("Space Game");
         setSize(WIDTH, HEIGHT);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setResizable(false);
-        stars = generateStars(350);
+//        stars = generateStars(350);
 
         gamePanel = new JPanel() {
             @Override
@@ -130,7 +140,14 @@ public class SpaceGame extends JFrame implements KeyListener {
         };
 
         try {
-            playerfish = ImageIO.read(new File("Player fish.png"));
+            healthboostImage = ImageIO.read(new File("Healthboost.png"));
+        } catch (IOException e) {
+            System.out.println("Cant find the healthboost image");
+            e.printStackTrace();
+        }
+
+        try {
+            playerfish = ImageIO.read(new File("Player duck.png"));
         } catch (IOException e) {
             System.out.println("Cant find the fish image");
             e.printStackTrace();
@@ -142,13 +159,18 @@ public class SpaceGame extends JFrame implements KeyListener {
             System.out.println("Cant find the squid image");
             e.printStackTrace();
         }
-
         try {
-            AudioInputStream fireStream = AudioSystem.getAudioInputStream(new File("fire.wav"));
+            backgroundImage = ImageIO.read(new File("background.png"));
+        } catch (IOException e) {
+            System.out.println("Cant find the background image");
+            e.printStackTrace();
+        }
+        try {
+            AudioInputStream fireStream = AudioSystem.getAudioInputStream(new File("fire2.wav"));
             fireClip = AudioSystem.getClip();
             fireClip.open(fireStream);
 
-            AudioInputStream collisionStream = AudioSystem.getAudioInputStream(new File("collision.wav"));
+            AudioInputStream collisionStream = AudioSystem.getAudioInputStream(new File("collision2.wav"));
             collisionClip = AudioSystem.getClip();
             collisionClip.open(collisionStream);
         } catch (UnsupportedAudioFileException | IOException | LineUnavailableException e) {
@@ -165,9 +187,9 @@ public class SpaceGame extends JFrame implements KeyListener {
         gamePanel.setFocusable(true);
         gamePanel.addKeyListener(this);
 
-        playerX = WIDTH / 2 - PLAYER_WIDTH / 2;
+        playerX = 10;
         playerY = HEIGHT - PLAYER_HEIGHT - 20;
-        projectileX = playerX + PLAYER_WIDTH / 2 - PROJECTILE_WIDTH / 2;
+        projectileX = playerX + PLAYER_WIDTH;
         projectileY = playerY;
         isProjectileVisible = false;
         isGameOver = false;
@@ -197,15 +219,17 @@ public class SpaceGame extends JFrame implements KeyListener {
     }
 
     private void draw(Graphics g) {
-        g.setColor(Color.BLACK);
-        g.fillRect(0, 0, WIDTH, HEIGHT);
+        g.drawImage(backgroundImage, 0, 0, WIDTH, HEIGHT, null);
+//        g.setColor(Color.BLACK);
+//        g.fillRect(0, 0, WIDTH, HEIGHT);
 
-        for (Star star : stars) {
-            g.setColor(star.color);
-            g.fillRect(star.x, star.y, 3, 3);
-        }
+//        for (Star star : stars) {
+//            g.setColor(star.color);
+//            g.fillRect(star.x, star.y, 3, 3);
+//        }
 
-        g.drawImage(playerfish, playerX, playerY, PLAYER_WIDTH, PLAYER_HEIGHT, null);
+        int duckFrameWidth = playerfish.getWidth() / DUCK_FRAME_COUNT;
+        g.drawImage(playerfish.getSubimage(currentDuckFrame * duckFrameWidth, 0, duckFrameWidth,playerfish.getHeight()), playerX, playerY, PLAYER_WIDTH, PLAYER_HEIGHT, null);
 
         if (isProjectileVisible) {
             g.setColor(Color.BLUE);
@@ -249,9 +273,9 @@ public class SpaceGame extends JFrame implements KeyListener {
         g.setFont(new Font("Arial", Font.BOLD, 20));
         g.drawString("Level: " + level, 10, 80);
 
-        g.setColor(Color.GREEN);
         for (Healthboost healthboost : healthBoosts) {
-            g.fillOval(healthboost.x, healthboost.y, 20, 20);
+            g.drawImage(healthboostImage, healthboost.x, healthboost.y, 50, 50, null);
+
         }
     }
 
@@ -260,36 +284,49 @@ public class SpaceGame extends JFrame implements KeyListener {
         if (!isGameOver) {
             // Move obstacles
             for (int i = 0; i < obstacles.size(); i++) {
-                obstacles.get(i).y += OBSTACLE_SPEED + (level -3);
-                if (obstacles.get(i).y > HEIGHT) {
+                obstacles.get(i).x -= OBSTACLE_SPEED + (level -3);
+                if (obstacles.get(i).x + OBSTACLE_WIDTH < 0) {
                     obstacles.remove(i);
                     i--;
                 }
             }
+            if (movingUp && playerY > 0) {
+                playerY -= PLAYER_SPEED;
+            }
+            if (movingDown && playerY + PLAYER_SPEED < HEIGHT - PLAYER_HEIGHT) {
+                playerY += PLAYER_SPEED;
+            }
+            if (movingLeft && playerX > 0) {
+                playerX -= PLAYER_SPEED;
+            }
+            if (movingRight && playerX < WIDTH - PLAYER_WIDTH) {
+                playerX += PLAYER_SPEED;
+            }
+
             if (Math.random() < 0.005) {
-                int healthBoostX = (int) (Math.random() * WIDTH - OBSTACLE_WIDTH);
-                healthBoosts.add(new Healthboost(healthBoostX, 0));
+                int healthBoostY = (int) (Math.random() * HEIGHT - 20);
+                healthBoosts.add(new Healthboost(WIDTH, healthBoostY));
             }
 
             if (isShieldActive && System.currentTimeMillis() > shieldEndTime) {
                 isShieldActive = false;
             }
 
-            if (Math.random() < 0.02) {
-                stars = generateStars(300);
-            }
+//            if (Math.random() < 0.02) {
+//                stars = generateStars(300);
+//            }
 
             // Generate new obstacles
             if (Math.random() < 0.02) {
-                int obstacleX = (int) (Math.random() * (WIDTH - OBSTACLE_WIDTH));
+                int obstacleY = (int) (Math.random() * (HEIGHT - OBSTACLE_HEIGHT));
                 int spriteIndex = (int) (Math.random() * 4);
-                obstacles.add(new Obstacle(obstacleX, 0, spriteIndex));
+                obstacles.add(new Obstacle(WIDTH, obstacleY, spriteIndex));
             }
 
             // Move projectile
             if (isProjectileVisible) {
-                projectileY -= PROJECTILE_SPEED;
-                if (projectileY < 0) {
+                projectileX += PROJECTILE_SPEED;
+                if (projectileX > WIDTH) {
                     isProjectileVisible = false;
                 }
             }
@@ -320,6 +357,7 @@ public class SpaceGame extends JFrame implements KeyListener {
                 Rectangle obstacleRect = new Rectangle(obstacles.get(i).x, obstacles.get(i).y, OBSTACLE_WIDTH, OBSTACLE_HEIGHT);
 
                 if (projectileRect.intersects(obstacleRect)) {
+                    collisionClip.stop();
                     collisionClip.setFramePosition(0);
                     collisionClip.start();
                 }
@@ -338,9 +376,9 @@ public class SpaceGame extends JFrame implements KeyListener {
             }
             for (int i = 0; i < healthBoosts.size(); i++) {
                 Healthboost healthboost = healthBoosts.get(i);
-                healthboost.y += OBSTACLE_SPEED;
+                healthboost.x -= OBSTACLE_SPEED;
 
-                if (healthboost.y > HEIGHT) {
+                if (healthboost.x < 0) {
                     healthBoosts.remove(i);
                     i--;
                 }
@@ -348,7 +386,7 @@ public class SpaceGame extends JFrame implements KeyListener {
             }
             for (int i = 0; i < healthBoosts.size(); i++) {
                 Healthboost healthboost = healthBoosts.get(i);
-                Rectangle boostRect = new Rectangle(healthboost.x, healthboost.y, 20, 20);
+                Rectangle boostRect = new Rectangle(healthboost.x, healthboost.y, 50, 50);
 
                 if (boostRect.intersects(playerRect)) {
                     if (playerHealth < 2) {
@@ -360,7 +398,11 @@ public class SpaceGame extends JFrame implements KeyListener {
 
             }
 
-
+            long currentTime = System.currentTimeMillis();
+            if (currentTime - finalDuckFrame > DUCK_ANIMATION_DELAY) {
+                currentDuckFrame = (currentDuckFrame + 1) % DUCK_FRAME_COUNT;
+                finalDuckFrame = currentTime;
+            }
 
             scoreLabel.setText("Score: " + score);
         }
@@ -369,13 +411,17 @@ public class SpaceGame extends JFrame implements KeyListener {
     @Override
     public void keyPressed(KeyEvent e) {
         int keyCode = e.getKeyCode();
-        if (keyCode == KeyEvent.VK_LEFT && playerX > 0) {
-            playerX -= PLAYER_SPEED;
-        } else if (keyCode == KeyEvent.VK_RIGHT && playerX < WIDTH - PLAYER_WIDTH) {
-            playerX += PLAYER_SPEED;
+        if (keyCode == KeyEvent.VK_UP) {
+            movingUp = true;
+        } else if (keyCode == KeyEvent.VK_DOWN) {
+            movingDown = true;
+        } else if (keyCode == KeyEvent.VK_LEFT) {
+            movingLeft = true;
+        } else if (keyCode == KeyEvent.VK_RIGHT) {
+            movingRight = true;
         } else if (keyCode == KeyEvent.VK_SPACE && !isFiring) {
             isFiring = true;
-            projectileX = playerX + PLAYER_WIDTH / 2 - PROJECTILE_WIDTH / 2;
+            projectileX = playerX + PLAYER_WIDTH;
             projectileY = playerY;
             isProjectileVisible = true;
 
@@ -404,7 +450,18 @@ public class SpaceGame extends JFrame implements KeyListener {
     public void keyTyped(KeyEvent e) {}
 
     @Override
-    public void keyReleased(KeyEvent e) {}
+    public void keyReleased(KeyEvent e) {
+        int keyCode = e.getKeyCode();
+        if (keyCode == KeyEvent.VK_UP) {
+            movingUp = false;
+        } else if (keyCode == KeyEvent.VK_DOWN) {
+            movingDown = false;
+        } else if (keyCode == KeyEvent.VK_LEFT) {
+            movingLeft = false;
+        } else if (keyCode == KeyEvent.VK_RIGHT) {
+            movingRight = false;
+        }
+    }
 
     public static void main(String[] args) {
         SwingUtilities.invokeLater(new Runnable() {
