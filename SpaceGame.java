@@ -32,6 +32,7 @@ public class SpaceGame extends JFrame implements KeyListener {
     private static final int OBSTACLE_SPEED = 3;
     private static final int PROJECTILE_SPEED = 20;
     private int score = 0;
+    private Clip backgroundClip;
     private BufferedImage backgroundImage;
     private BufferedImage quackAttack;
     private final int QUACK_WIDTH = 32;
@@ -146,6 +147,16 @@ public class SpaceGame extends JFrame implements KeyListener {
                 draw(g);
             }
         };
+
+        try {
+            AudioInputStream bgStream = AudioSystem.getAudioInputStream(new File ("Duck Migration Theme.wav"));
+            backgroundClip = AudioSystem.getClip();
+            backgroundClip.open(bgStream);
+            backgroundClip.start();
+        } catch (UnsupportedAudioFileException | IOException | LineUnavailableException e) {
+            System.out.println("Cant find the quackattack image");
+            e.printStackTrace();
+        }
 
         try {
             healthboostImage = ImageIO.read(new File("Healthboost.png"));
