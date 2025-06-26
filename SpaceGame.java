@@ -33,6 +33,9 @@ public class SpaceGame extends JFrame implements KeyListener {
     private static final int PROJECTILE_SPEED = 20;
     private int score = 0;
     private BufferedImage backgroundImage;
+    private BufferedImage quackAttack;
+    private final int QUACK_WIDTH = 32;
+    private final int QUACK_HEIGHT = 32;
     private int playerHealth = 2;
     private int timeLeft = 60;
 
@@ -48,6 +51,11 @@ public class SpaceGame extends JFrame implements KeyListener {
     private int currentDuckFrame = 0;
     private long finalDuckFrame = 0;
     private final int DUCK_ANIMATION_DELAY = 50;
+
+    private final int SQUID_FRAME_COUNT =5;
+    private int currentsquidFrame = 0;
+    private long finalsquidFrame = 0;
+    private final int SQUID_ANIMATION_DELAY = 100;
 
     private boolean isShieldActive = false;
     private long shieldEndTime = 0;
@@ -154,7 +162,7 @@ public class SpaceGame extends JFrame implements KeyListener {
         }
 
         try {
-            squidSpriteSheet = ImageIO.read(new File("Enemy squid.png"));
+            squidSpriteSheet = ImageIO.read(new File("Enemy squid2.png"));
         } catch (IOException e) {
             System.out.println("Cant find the squid image");
             e.printStackTrace();
@@ -165,6 +173,14 @@ public class SpaceGame extends JFrame implements KeyListener {
             System.out.println("Cant find the background image");
             e.printStackTrace();
         }
+
+        try {
+            quackAttack = ImageIO.read(new File("QUACKATTACK2.png"));
+        } catch (IOException e) {
+            System.out.println("Cant find the quackattack image");
+            e.printStackTrace();
+        }
+
         try {
             AudioInputStream fireStream = AudioSystem.getAudioInputStream(new File("fire2.wav"));
             fireClip = AudioSystem.getClip();
@@ -232,13 +248,12 @@ public class SpaceGame extends JFrame implements KeyListener {
         g.drawImage(playerfish.getSubimage(currentDuckFrame * duckFrameWidth, 0, duckFrameWidth,playerfish.getHeight()), playerX, playerY, PLAYER_WIDTH, PLAYER_HEIGHT, null);
 
         if (isProjectileVisible) {
-            g.setColor(Color.BLUE);
-            g.fillRect(projectileX, projectileY, PROJECTILE_WIDTH, PROJECTILE_HEIGHT);
+            g.drawImage(quackAttack, projectileX, projectileY, PROJECTILE_WIDTH, PROJECTILE_HEIGHT, null);
         }
 
 
         for (Obstacle obstacle : obstacles) {
-            int sx = obstacle.spriteIndex * SPRITE_WIDTH;
+            int sx = currentsquidFrame * SPRITE_WIDTH;
             int sy = 0;
             g.drawImage(
                     squidSpriteSheet.getSubimage(sx, sy, SPRITE_WIDTH, SPRITE_HEIGHT),
@@ -319,7 +334,7 @@ public class SpaceGame extends JFrame implements KeyListener {
             // Generate new obstacles
             if (Math.random() < 0.02) {
                 int obstacleY = (int) (Math.random() * (HEIGHT - OBSTACLE_HEIGHT));
-                int spriteIndex = (int) (Math.random() * 4);
+                int spriteIndex = (int) (Math.random() * 5);
                 obstacles.add(new Obstacle(WIDTH, obstacleY, spriteIndex));
             }
 
@@ -352,7 +367,7 @@ public class SpaceGame extends JFrame implements KeyListener {
 
 
             // Check collision with obstacle
-            Rectangle projectileRect = new Rectangle(projectileX, projectileY, PROJECTILE_WIDTH, PROJECTILE_HEIGHT);
+            Rectangle projectileRect = new Rectangle(projectileX, projectileY, QUACK_WIDTH, QUACK_HEIGHT);
             for (int i = 0; i < obstacles.size(); i++) {
                 Rectangle obstacleRect = new Rectangle(obstacles.get(i).x, obstacles.get(i).y, OBSTACLE_WIDTH, OBSTACLE_HEIGHT);
 
@@ -403,6 +418,12 @@ public class SpaceGame extends JFrame implements KeyListener {
                 currentDuckFrame = (currentDuckFrame + 1) % DUCK_FRAME_COUNT;
                 finalDuckFrame = currentTime;
             }
+
+            if (currentTime - finalsquidFrame > SQUID_ANIMATION_DELAY) {
+                currentsquidFrame = (currentsquidFrame + 1) % SQUID_FRAME_COUNT;
+                finalsquidFrame = currentTime;
+            }
+
 
             scoreLabel.setText("Score: " + score);
         }
