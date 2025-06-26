@@ -43,6 +43,15 @@ public class SpaceGame extends JFrame implements KeyListener {
     private int level = 1;
     private int levelNum = 20;
 
+    private int waterY = HEIGHT / 2;    //NEW
+    private static final int WATER_HEIGHT = HEIGHT / 2;// NEW
+    private int mountainY = HEIGHT - WATER_HEIGHT - 50;// NEW
+    private static final int MOUNTAIN_SPEED = 2;// NEW
+    private int sunY = 50;// NEW
+    private int sunX = 400;// NEW
+    private static final int SUN_SPEED = 1;// NEW
+    private static final int SUN_RADIUS = 50; // NEW
+
     private boolean movingUp = false;
     private boolean movingDown = false;
     private boolean movingLeft = false;
@@ -246,7 +255,26 @@ public class SpaceGame extends JFrame implements KeyListener {
     }
 
     private void draw(Graphics g) {
-        g.drawImage(backgroundImage, 0, 0, WIDTH, HEIGHT, null);
+
+        g.setColor(Color.CYAN);// NEW
+        g.fillRect(0, 0, WIDTH, HEIGHT);// NEW
+        g.setColor(Color.BLUE);// NEW
+        g.fillRect(0, waterY, WIDTH, WATER_HEIGHT);// NEW
+
+
+        g.setColor(Color.DARK_GRAY);// NEW
+        for (int i = 0; i < 3; i++) {// NEW
+            int x = mountainY + i * 200;// NEW
+            int[] xPoints = {x, x + 100, x + 200};// NEW
+            int[] yPoints = {HEIGHT - WATER_HEIGHT, HEIGHT - WATER_HEIGHT - 100, HEIGHT - WATER_HEIGHT};// NEW
+            g.fillPolygon(xPoints, yPoints, 3);// NEW
+        }// NEW
+
+
+        g.setColor(Color.YELLOW);// NEW
+        g.fillOval(sunX, sunY, SUN_RADIUS * 2, SUN_RADIUS * 2);// NEW
+
+        //g.drawImage(backgroundImage, 0, 0, WIDTH, HEIGHT, null);
 //        g.setColor(Color.BLACK);
 //        g.fillRect(0, 0, WIDTH, HEIGHT);
 
@@ -308,6 +336,23 @@ public class SpaceGame extends JFrame implements KeyListener {
 
     private void update() {
         if (!isGameOver) {
+
+            mountainY -= MOUNTAIN_SPEED;// NEW
+            sunX -= SUN_SPEED;// NEW
+
+
+
+
+            if (mountainY <= -WIDTH)// NEW
+            {// NEW
+                mountainY = WIDTH;// NEW
+            }// NEW
+            if (sunX <= -100)// NEW
+            {// NEW
+                sunX = WIDTH + 100;// NEW
+            }// NEW
+
+
             // Move obstacles
             for (int i = 0; i < obstacles.size(); i++) {
                 obstacles.get(i).x -= OBSTACLE_SPEED + (level -3);
