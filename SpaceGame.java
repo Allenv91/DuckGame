@@ -161,7 +161,7 @@ public class SpaceGame extends JFrame implements KeyListener {
             AudioInputStream bgStream = AudioSystem.getAudioInputStream(new File ("Duck Migration Theme.wav"));
             backgroundClip = AudioSystem.getClip();
             backgroundClip.open(bgStream);
-            backgroundClip.start();
+            backgroundClip.loop(Clip.LOOP_CONTINUOUSLY);
         } catch (UnsupportedAudioFileException | IOException | LineUnavailableException e) {
             System.out.println("Cant find the quackattack image");
             e.printStackTrace();
@@ -248,6 +248,9 @@ public class SpaceGame extends JFrame implements KeyListener {
                     timeLeft--;
                     if (timeLeft == 0) {
                         isGameOver = true;
+                        if (backgroundClip != null && backgroundClip.isRunning()) {
+                            backgroundClip.stop();
+                        }
                     }
                 }
             }
@@ -415,6 +418,9 @@ public class SpaceGame extends JFrame implements KeyListener {
 
                         if (playerHealth <= 0) {
                             isGameOver = true;
+                            if (backgroundClip != null && backgroundClip.isRunning()) {
+                                backgroundClip.stop();
+                            }
                             break;
                         }
                     }
