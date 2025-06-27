@@ -121,8 +121,8 @@ public class SpaceGame extends JFrame implements KeyListener {
         private final int FRAME_DELAY = 100;
         double x, y;
         double vx = 0, vy = 0;
-        final double maxSpeed = 2.0;
-        final double steeringStrength = 0.05;
+        final double maxSpeed = 5.0;
+        final double steeringStrength = 0.20;
         boolean active = true;
 
         public Bee(double startX, double startY) {
@@ -413,7 +413,7 @@ public class SpaceGame extends JFrame implements KeyListener {
         }
 
 
-        g.setColor(Color.GREEN);
+        g.setColor(Color.MAGENTA);
         g.setFont(new Font("Arial", Font.BOLD, 24));
         g.drawString("Health: " + playerHealth, 10, 20);
 
