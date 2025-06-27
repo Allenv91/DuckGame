@@ -10,9 +10,9 @@
 
 
 import javax.swing.*;
-import java.awt.*;
-import java.awt.event.*;
-import java.util.ArrayList;
+        import java.awt.*;
+        import java.awt.event.*;
+        import java.util.ArrayList;
 import java.awt.image.BufferedImage;
 import javax.imageio.ImageIO;
 import java.io.File;
@@ -35,6 +35,8 @@ public class SpaceGame extends JFrame implements KeyListener {
     private Clip backgroundClip;
     private BufferedImage backgroundImage;
     private BufferedImage quackAttack;
+    private BufferedImage beeImage;
+
     private final int QUACK_WIDTH = 32;
     private final int QUACK_HEIGHT = 32;
     private int playerHealth = 2;
@@ -79,7 +81,13 @@ public class SpaceGame extends JFrame implements KeyListener {
     private int projectileX, projectileY;
     private boolean isProjectileVisible;
     private boolean isFiring;
+    private long gameStartTime;
+    private long gameEndTime;
+
     private java.util.List<Obstacle> obstacles;
+    private java.util.List<Bee> bees = new ArrayList<>();
+
+
     private class Obstacle {
         int x, y;
         int spriteIndex;
@@ -90,8 +98,6 @@ public class SpaceGame extends JFrame implements KeyListener {
             this.spriteIndex = spriteIndex;
         }
     }
-
-
 
 
 
@@ -108,7 +114,65 @@ public class SpaceGame extends JFrame implements KeyListener {
     }
 
 
-//    //*private java.util.List<Star> stars;
+    class Bee {
+        private int frame = 0;
+        private long lastFrameTime = 0;
+        private final int FRAME_COUNT = 5;
+        private final int FRAME_DELAY = 100;
+        double x, y;
+        double vx = 0, vy = 0;
+        final double maxSpeed = 2.0;
+        final double steeringStrength = 0.05;
+        boolean active = true;
+
+        public Bee(double startX, double startY) {
+            this.x = startX;
+            this.y = startY;
+        }
+        public void animate() {
+            long currentTime = System.currentTimeMillis();
+            if (currentTime - lastFrameTime > FRAME_DELAY) {
+                frame = (frame + 1) % FRAME_COUNT;
+                lastFrameTime = currentTime;
+            }
+        }
+
+        public void update(double targetX, double targetY) {
+            double dx = targetX - x;
+            double dy = targetY - y;
+            double distance = Math.hypot(dx, dy);
+
+            if (distance < 200) { // Only pursue when nearby
+                double desiredX = dx / distance * maxSpeed;
+                double desiredY = dy / distance * maxSpeed;
+                double steerX = desiredX - vx;
+                double steerY = desiredY - vy;
+
+                vx += steerX * steeringStrength;
+                vy += steerY * steeringStrength;
+
+                double speed = Math.hypot(vx, vy);
+                if (speed > maxSpeed) {
+                    vx = (vx / speed) * maxSpeed;
+                    vy = (vy / speed) * maxSpeed;
+                }
+
+                x += vx;
+                y += vy;
+            }
+            else {
+                // default movement
+                x -= 1.5;
+            }
+
+        }
+
+        public Rectangle getBounds() {
+            return new Rectangle((int)x, (int)y, 40, 40);
+        }
+    }
+
+    //    //*private java.util.List<Star> stars;
 //    private class Star {
 //        int x, y;
 //        Color color;
@@ -143,7 +207,7 @@ public class SpaceGame extends JFrame implements KeyListener {
 //    }
 
     public SpaceGame() {
-        setTitle("Space Game");
+        setTitle("Duck Game");
         setSize(WIDTH, HEIGHT);
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setResizable(false);
@@ -200,6 +264,13 @@ public class SpaceGame extends JFrame implements KeyListener {
             System.out.println("Cant find the quackattack image");
             e.printStackTrace();
         }
+        try {
+            beeImage = ImageIO.read(new File("AI_BEE.png"));
+        } catch (IOException e) {
+            System.out.println("Could not load bee image.");
+            e.printStackTrace();
+        }
+
 
         try {
             AudioInputStream fireStream = AudioSystem.getAudioInputStream(new File("fire2.wav"));
@@ -229,6 +300,8 @@ public class SpaceGame extends JFrame implements KeyListener {
         projectileY = playerY;
         isProjectileVisible = false;
         isGameOver = false;
+        gameStartTime = System.currentTimeMillis();
+
         isFiring = false;
         obstacles = new ArrayList<>();
 
@@ -307,16 +380,38 @@ public class SpaceGame extends JFrame implements KeyListener {
             );
         }
 
+        for (Bee bee : bees) {
+            int beeFrameWidth = beeImage.getWidth() / 5;
+            int sx = bee.frame * beeFrameWidth;
+
+            g.drawImage(
+                    beeImage.getSubimage(sx, 0, beeFrameWidth, beeImage.getHeight()),
+                    (int) bee.x, (int) bee.y,
+                    40, 40,
+                    null
+            );
+
+        }
+
         if (isShieldActive) {
             g.setColor(Color.CYAN);
             g.drawOval(playerX - 5, playerY - 5, PLAYER_HEIGHT, PLAYER_WIDTH);
         }
 
-        if (isGameOver) {
+        if (isGameOver) { //NEW
             g.setColor(Color.WHITE);
-            g.setFont(new Font("Arial", Font.BOLD, 24));
-            g.drawString("Game Over!", WIDTH / 2 - 80, HEIGHT / 2);
+            g.setFont(new Font("Arial", Font.BOLD, 28));
+            g.drawString("GAME OVER", WIDTH / 2 - 90, HEIGHT / 2 - 60);
+
+            g.setFont(new Font("Arial", Font.PLAIN, 20));
+            g.drawString("Score: " + score, WIDTH / 2 - 50, HEIGHT / 2 - 20);
+
+            long survivedSeconds = (gameEndTime - gameStartTime) / 1000;
+            g.drawString("Time Survived: " + survivedSeconds + "s", WIDTH / 2 - 90, HEIGHT / 2 + 10);
+
+            g.drawString("Press SPACE to restart", WIDTH / 2 - 100, HEIGHT / 2 + 50);
         }
+
 
         g.setColor(Color.GREEN);
         g.setFont(new Font("Arial", Font.BOLD, 24));
@@ -397,6 +492,10 @@ public class SpaceGame extends JFrame implements KeyListener {
                 obstacles.add(new Obstacle(WIDTH, obstacleY, spriteIndex));
             }
 
+            if (Math.random() < 0.003 && bees.size() < 3) {
+                bees.add(new Bee(WIDTH, Math.random() * HEIGHT));
+            }
+
             // Move projectile
             if (isProjectileVisible) {
                 projectileX += PROJECTILE_SPEED;
@@ -416,10 +515,14 @@ public class SpaceGame extends JFrame implements KeyListener {
                         obstacles.remove(i);
                         i--;
 
+                        gameEndTime = System.currentTimeMillis();
+
                         if (playerHealth <= 0) {
                             isGameOver = true;
                             if (backgroundClip != null && backgroundClip.isRunning()) {
                                 backgroundClip.stop();
+                                gameEndTime = System.currentTimeMillis(); //Capture end time
+
                             }
                             break;
                         }
@@ -427,6 +530,44 @@ public class SpaceGame extends JFrame implements KeyListener {
                 }
             }
 
+            Rectangle beeProjectileRect = new Rectangle(projectileX, projectileY, QUACK_WIDTH, QUACK_HEIGHT);
+            for (int i = 0; i < bees.size(); i++) {
+                Bee bee = bees.get(i);
+                Rectangle beeRect = bee.getBounds();
+
+                if (beeProjectileRect.intersects(beeRect)) {
+                    bees.remove(i);
+                    i--;
+                    score += 15; //give more points for bees
+                    isProjectileVisible = false;
+
+                    if (collisionClip != null) {
+                        collisionClip.stop();
+                        collisionClip.setFramePosition(0);
+                        collisionClip.start();
+                    }
+
+                    break;
+                }
+            }
+
+
+            Rectangle playerRectangle = new Rectangle(playerX, playerY, PLAYER_WIDTH, PLAYER_HEIGHT);
+
+            for (int i = 0; i < bees.size(); i++) {
+                if (playerRectangle.intersects(bees.get(i).getBounds())) {
+                    if (!isShieldActive) {
+                        playerHealth--;
+                        bees.remove(i);
+                        i--;
+                        if (playerHealth <= 0) {
+                            isGameOver = true;
+                            gameEndTime = System.currentTimeMillis();
+                            if (backgroundClip != null) backgroundClip.stop();
+                        }
+                    }
+                }
+            }
 
             // Check collision with obstacle
             Rectangle projectileRect = new Rectangle(projectileX, projectileY, QUACK_WIDTH, QUACK_HEIGHT);
@@ -451,6 +592,12 @@ public class SpaceGame extends JFrame implements KeyListener {
                 }
 
             }
+
+            for (Bee bee : bees) { //new
+                bee.update(playerX, playerY); //new
+                bee.animate(); //new
+            }
+
             for (int i = 0; i < healthBoosts.size(); i++) {
                 Healthboost healthboost = healthBoosts.get(i);
                 healthboost.x -= OBSTACLE_SPEED;
@@ -527,6 +674,10 @@ public class SpaceGame extends JFrame implements KeyListener {
             shieldEndTime = System.currentTimeMillis() + SHIELD_DURATION;
         }
 
+        if (isGameOver && keyCode == KeyEvent.VK_SPACE) {
+            restartGame();
+        }
+
     }
 
     @Override
@@ -554,4 +705,33 @@ public class SpaceGame extends JFrame implements KeyListener {
             }
         });
     }
+    // Reset all game variables and state
+    private void restartGame() {
+        playerX = 10;
+        playerY = HEIGHT - PLAYER_HEIGHT - 20;
+        projectileX = playerX + PLAYER_WIDTH;
+        projectileY = playerY;
+        isProjectileVisible = false;
+        isFiring = false;
+        isGameOver = false;
+
+        playerHealth = 2;
+        score = 0;
+        level = 1;
+        timeLeft = 60;
+
+        obstacles.clear();
+        healthBoosts.clear();
+        bees.clear(); // ← if you're tracking bees
+
+        gameStartTime = System.currentTimeMillis();
+        gameEndTime = 0;
+
+        if (backgroundClip != null) {
+            backgroundClip.setFramePosition(0);
+            backgroundClip.loop(Clip.LOOP_CONTINUOUSLY);
+        }
+
+    }
+
 }
