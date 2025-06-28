@@ -1,11 +1,10 @@
 /**
- * Project: Solo Lab 5 Assignment: Space Game Mods
- * Purpose Details: Modify a given space game to instructions
+ * Project: Team Assignment GUI Game Video Project Presentation
  * Course: IST 242
- * Author: Gustavo Reyes
+ * Author: Gustavo, Allen, Luke, Logan
  * Date Developed: 6/22/2025
- * Last Date Changed: 6/22/2025
- * Revision: 1
+ * Last Date Changed: 6/27/2025
+ * Revision: 4
  */
 
 
@@ -492,7 +491,7 @@ public class SpaceGame extends JFrame implements KeyListener {
                 obstacles.add(new Obstacle(WIDTH, obstacleY, spriteIndex));
             }
 
-            if (Math.random() < 0.003 && bees.size() < 3) {
+            if (Math.random() < 0.010 && bees.size() < 3) {
                 bees.add(new Bee(WIDTH, Math.random() * HEIGHT));
             }
 
